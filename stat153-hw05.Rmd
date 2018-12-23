@@ -1,0 +1,198 @@
+---
+title: "Stat 153 - Homework 5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Data Analysis and Computer Exercises
+
+##1. Exploratory Data Analysis
+
+```{r}
+library(astsa)
+library(forecast)
+```
+
+###a.
+
+```{r}
+births <- astsa::birth
+plot(births)
+```
+
+Stationarity clearly is not satisfied here, as one of the conditions, constant expectation over time, is not satisfied.
+
+###b.
+
+```{r}
+diff_births <- diff(births, differences = 1)
+plot(diff_births)
+```
+
+Stationarity doesn't seem like too bad of an assumption, just looking at this graph. It looks like it has constant expectation over time, so let's check if there are patterns in the ACF and PACF that would disqualify it.
+
+```{r}
+acf(diff_births)
+pacf(diff_births)
+```
+
+There exists strong periodicity in the data.
+
+###c.
+
+```{r}
+season_diff_births <- diff(diff_births, lag = 12, differences = 1)
+plot(season_diff_births)
+```
+
+Stationarity seems reasonable.
+
+```{r}
+acf(diff_births)
+pacf(diff_births)
+```
+
+There seems to be patterns in the acf and pacf, suggesting not white noise but some sort of ARMA model could be appropriate for the time series.
+
+##2. Model fitting and diagnostics
+
+###a.
+
+```{r}
+model1 <- sarima(births, 1,1,1)
+```
+
+This model is not a very good fit, as the standardized residuals show signs of seasonality, as can be seen in the residual plot, the ACF plot pattern. The qqplot looks consistent with a good model, but a seasonal model is still appropriate. The Ljung-Box test values look terrible for this model, with almost every lag being below the threshold rejecting the null hypothesis of no autocorrelations between the residuals.  
+
+```{r}
+model2 <- sarima(births, 1,1,1,1,1,1,12)
+```
+
+The residuals look like white noise, and this is confirmed by the ACF plot, which is consistent with white noise. The qqplot is pretty consistent with normal residuals, and the Ljung-Box test looks good, with most values failing to reject the null hypothesis of having no autocorrelation within the residuals.
+
+```{r}
+model3 <- sarima(births, 2,1,2,1,1,1,12)
+```
+
+The residuals look like white noise, and this is confirmed by the ACF plot, which is consistent with white noise. The qqplot is pretty consistent with normal residuals, and the Ljung-Box test looks good, with most values failing to reject the null hypothesis of having no autocorrelation within the residuals. These diagnostics are very similar to those of the last model. Since there is little performance increase, the simpler model may be more appropriate.
+
+##3. Model selection
+
+###a.
+
+```{r}
+model1$AIC
+model2$AIC
+model3$AIC
+```
+
+According to AIC, model 2 is the best model.
+
+###b.
+
+```{r}
+model1$AICc
+model2$AICc
+model3$AICc
+```
+
+According to AICc, model 2 is the best model
+
+###c. 
+
+```{r}
+model1$BIC
+model2$BIC
+model3$BIC
+```
+
+According to BIC, model 2 is the best model.
+
+###d.
+
+```{r}
+SE <- c()
+for (i in 1960:1979){
+  subset <- window(births, 1948, i-1)
+  temp_model1 <- Arima(subset, order = c(1,1,1))
+  temp_fitted <- predict(temp_model1, n.ahead = 12)
+  residuals <- (as.vector(temp_fitted$pred)-as.vector(window(births, i, i)))^2
+  SE[i] <- sum(residuals)
+  i = i+1
+}
+mean(na.omit(SE))
+```
+
+```{r}
+SE <- c()
+for (i in 1960:1979){
+  subset <- window(births, 1948, i-1)
+  temp_model2 <- Arima(subset, order = c(1,1,1), seasonal = list(order = c(1,1,1), period = 12))
+  temp_fitted2 <- predict(temp_model2, n.ahead = 12)
+  residuals2 <- (as.vector(temp_fitted2$pred)-as.vector(window(births, i, i)))^2
+  SE[i] <- sum(residuals2)
+  i = i+1
+}
+mean(na.omit(SE))
+```
+
+```{r}
+SE <- c()
+for (i in 1960:1979){
+  subset <- window(births, 1948, i-1)
+  temp_model3 <- Arima(subset, order = c(2,1,2), seasonal = list(order = c(1,1,1), period = 12))
+  temp_fitted3 <- predict(temp_model3, n.ahead = 12)
+  residuals3 <- (as.vector(temp_fitted3$pred)-as.vector(window(births, i, i)))^2
+  SE[i] <- sum(residuals2)
+  i = i+1
+}
+mean(na.omit(SE))
+```
+
+```{r, warning=FALSE}
+birth_data <- as.vector(births)
+t <- 1:373
+t2 <- t^2
+t3 <- t^3
+I1 <- rep(0, 373)
+I1[seq(1,373,12)] <- 1
+I2 <- rep(0, 373)
+I2[seq(2,373,12)] <- 1
+I3 <- rep(0, 373)
+I3[seq(3,373,12)] <- 1
+I4 <- rep(0, 373)
+I4[seq(4,373,12)] <- 1
+I5 <- rep(0, 373)
+I5[seq(5,373,12)] <- 1
+I6 <- rep(0, 373)
+I6[seq(6,373,12)] <- 1
+I7 <- rep(0, 373)
+I7[seq(7,373,12)] <- 1
+I8 <- rep(0, 373)
+I8[seq(8,373,12)] <- 1
+I9 <- rep(0, 373)
+I9[seq(9,373,12)] <- 1
+I10 <- rep(0, 373)
+I10[seq(10,373,12)] <- 1
+I11 <- rep(0, 373)
+I11[seq(11,373,12)] <- 1
+I12 <- rep(0, 373)
+I12[seq(12,373,12)] <- 1
+
+reg_data <- data.frame(birth_data,t,t2,t3,I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12)
+
+SE <- c()
+for (i in 12:30){
+  temp_lm <- lm(birth_data~t+t2+t3+I1+I2+I3+I4+I5+I6+I7+I8+I9+I10+I11+I12, data = head(reg_data, i*12))
+  temp_fitted_lm <- predict(temp_lm, reg_data[((i*12)+1):((i*12)+13),])
+  residuals_lm <- (as.vector(temp_fitted_lm)-births[(i*12+1):(i*12+13)])^2
+  SE[i] <- sum(residuals_lm)
+  i = i+1
+}
+mean(na.omit(SE))
+```
+
+The first model has the smallest cross-validation score.

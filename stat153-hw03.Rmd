@@ -1,0 +1,135 @@
+---
+title: "Stat 153 - Homework 3"
+author: "Nicholas Lai"
+date: "October 15, 2018"
+output: html_document
+---
+#Question 1
+
+##(a)
+
+```{r}
+gaussian_noise <- rnorm(100, mean = 0, sd = 1)
+
+x1 <- 0
+x2 <- 0
+
+gaussian_arma <- c(x1, x2)
+
+for (i in 3:100){
+  gaussian_arma[i] <- 0.7*gaussian_arma[i-1] - 0.3*gaussian_arma[i-2] + gaussian_noise[i] + 4*gaussian_noise[i-2]
+}
+
+plot(gaussian_arma, type = 'l')
+abline(h = 0)
+
+acf(gaussian_arma)
+```
+
+##(b)
+
+```{r}
+cauchy_noise <- rcauchy(100, location = 0, scale = 1)
+
+cauchy_arma <- c(x1, x2)
+
+for (i in 3:100){
+  cauchy_arma[i] <- 0.7*cauchy_arma[i-1] - 0.3*cauchy_arma[i-2] + cauchy_noise[i] + 4*cauchy_noise[i-2]
+}
+
+plot(cauchy_arma, type = 'l')
+abline(h = 0)
+
+acf(cauchy_arma)
+```
+
+##(c)
+
+The two ARMA processes look to be fairly different, in that the Cauchy process has a spike in the middle of the time series that is not present in the Gaussian process. The two ACF functions are similar, both leveling off and tending towards zero, and with some pseudo-periodicity.
+
+##(d)
+
+```{r}
+theory_acf <- ARMAacf(ar = c(0.7, -0.3), ma = c(0,4), lag.max = 20)
+theory_acf <- as.vector(theory_acf)
+theory_acf_expanded <- ARMAacf(ar = c(0.7, -0.3), ma = c(0,4), lag.max = 100)
+
+term <- 0
+ci_max <- c(theory_acf[1])
+ci_min <- c(theory_acf[1])
+
+for (i in 1:20){
+  for (m in 1:20){
+    term <- term + (theory_acf_expanded[abs(m-i)+1]+theory_acf_expanded[m+i+1] - 2*    theory_acf_expanded[i+1]*theory_acf_expanded[m+1])^2}
+  ci_max[i+1] <- theory_acf_expanded[i+1]+1.96*term/sqrt(100)
+  ci_min[i+1] <- theory_acf_expanded[i+1]-1.96*term/sqrt(100)
+  term <- 0
+}
+
+
+acf(gaussian_arma)
+plot(theory_acf, ylim = c(-1, 1))
+lines(ci_max, type = 'l')
+lines(ci_min, type = 'l')
+
+
+```
+
+This ACF plot is similar to that in (a), but the confidence intervals for mean response are more accurate here, as they represent the asymptotic result for the ARMA function, not white noise.
+
+The ACF plot also shows no pseudo-seasonality like present in the prior graph.
+
+##(e)
+
+```{r}
+ma_coefs <- ARMAtoMA(ar = c(0.7, -0.3), ma = c(0,4), lag.max = 20)
+gaussian_2 <- rnorm(20)
+x1 <- sum(gaussian_2*ma_coefs)
+x2 <- sum(gaussian_noise[1:20]*ma_coefs)
+
+gaussian_arma <- c(x1, x2)
+
+for (i in 3:100){
+  gaussian_arma[i] <- 0.7*gaussian_arma[i-1] - 0.3*gaussian_arma[i-2] + gaussian_noise[i] + 4*gaussian_noise[i-2]
+}
+
+plot(gaussian_arma, type = 'l')
+abline(h = 0)
+
+acf(gaussian_arma)
+```
+
+Looks much more similar to the theoretical calculated ACFs than (a). There is seemingly less periodicity in the ACFs.
+
+##(f)
+
+```{r}
+1+4*ma_coefs[2]
+4*ma_coefs[1]
+4
+
+ro_0 <- 27.26
+ro_1 <- 16.833
+ro_2 <- 7.6048
+
+acvf_ARMA <- c(ro_0, ro_1, ro_2)
+
+for (i in 4:21){
+  acvf_ARMA[i] <- 0.7*acvf_ARMA[i-1] - 0.3*acvf_ARMA[i-2]
+}
+
+acvf_ARMA
+```
+##(g)
+
+```{r}
+acf_ARMA <- acvf_ARMA/acvf_ARMA[1]
+acf_ARMA
+
+plot(acf_ARMA)
+lines(theory_acf)
+
+plot(acf_ARMA - theory_acf)
+```
+
+Even though the line of theoretical acfs matches pretty well against the calculated ones, there is slight systemic error with the same pattern as the acfs! The magnitude of the error is small, and this could be due to the rounding error when solving the difference system for the initial coefficients that levels out over time as the acf tends towards zero for both. Or I could have mismatched the indices or some other thing and it should be a perfect match.

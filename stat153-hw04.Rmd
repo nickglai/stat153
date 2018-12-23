@@ -1,0 +1,118 @@
+---
+title: "Stat 153 - Homework 4"
+author: "Nicholas Lai"
+date: "October 21, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 1
+
+##a)
+
+```{r}
+detrended <- lm(LakeHuron~c(1:length(LakeHuron)))
+residuals <- resid(detrended)
+
+plot(residuals, type = 'l')
+```
+
+##b)
+
+```{r}
+model <- arima(residuals, order = c(1,0,0))
+
+model
+```
+
+##c)
+
+```{r}
+t_plus_m <- c()
+for (i in 1:30){
+  t_plus_m[i] <- residuals[length(LakeHuron)]*(0.7829^i)
+}
+plot(t_plus_m)
+```
+
+##d)
+
+```{r}
+predictions <- predict(model, n.ahead = 30)
+plot(predictions[[1]])
+```
+
+The manually predicted values and the `predict()` values coincide very nicely, suggesting that we've got it right.
+
+##e), f), and g)
+
+```{r}
+summary(detrended)
+lake_copy <- as.vector(LakeHuron)
+upper <- c()
+lower <- c()
+manual_upper <- c()
+manual_lower <- c()
+for (i in 99:129){
+  lake_copy[i] <- t_plus_m[i-98]+580.2+i*(-0.0242)
+  
+  upper[i] <- t_plus_m[i-98]+580.2+i*(-0.0242) + 1.96*predictions[[2]][i-98]
+  
+  lower[i] <- t_plus_m[i-98]+580.2+i*(-0.0242) - 1.96*predictions[[2]][i-98]
+  
+  manual_upper[i] <- t_plus_m[i-98]+580.2+i*(-0.0242)+1.96*(var(residuals)-var(residuals)*0.7829^2)*(1-0.7829^(2*(i-98)))/(1-0.7829^2)
+  
+  manual_lower[i] <- t_plus_m[i-98]+580.2+i*(-0.0242)-1.96*(var(residuals)-var(residuals)*0.7829^2)*(1-0.7829^(2*(i-98)))/(1-0.7829^2)
+}
+plot(lake_copy, type = 'l')
+
+plot(lake_copy, type = 'l')
+lines(upper, col = 'blue')
+lines(lower, col = 'blue')
+lines(manual_upper, col = 'Red')
+lines(manual_lower, col = 'Red')
+
+```
+
+The original data predictions have been appended onto the Lake Huron data.
+
+The `predict()` 95% intervals are in blue, with the manually computed intervals in red. They coincide reasonably well, and the red intervals were computed using the MSE formula we obtained in Theoretical Problem 3, Part 2.
+
+#Question 2
+
+```{r}
+sim1 <- arima.sim(n = 10000, model = list(ar = c(3/5, -4/5)))
+sim2 <- arima.sim(n = 10000, model = list(ma = c(0.8, 1.1)))
+sim3 <- arima.sim(n = 10000, model = list(ar = c(4/5), ma = c(4/5)))
+```
+
+##a)
+
+```{r}
+acf(sim1)
+pacf(sim1)
+```
+
+The pacf has 2 spikes, suggesting an AR(2) model with terms at the lags with the spikes. The acf is exponentially decreasing, suggesting no MA component.
+
+##b)
+
+```{r}
+acf(sim2)
+pacf(sim2)
+```
+
+2 spikes in the acf suggest an MA(2) process. The pacf is exponentially decreasing, suggesting no AR component.
+
+##c)
+
+```{r}
+acf(sim3)
+pacf(sim3)
+```
+
+Both the acf and pacf are exponentially decreasing, so a mixed ARMA model could be appropriate.
+

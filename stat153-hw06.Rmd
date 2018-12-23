@@ -1,0 +1,85 @@
+---
+title: "Homework 6"
+author: "Nicholas Lai"
+date: "November 24, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(astsa)
+set.seed(123)
+```
+##Question 1
+
+###(a)
+
+```{r}
+arma.spec(ar =c(1,-.9))
+```
+
+There is a dominant frequency between 0.1 and 0.2.
+
+```{r}
+sim_1 <- arima.sim(model = list(ar = c(1,-.9)), n = 50)
+plot(sim_1)
+```
+
+There is periodic behavior of period between 5 and 10, as would be predicted by the dominant frequency in the spectral density.
+
+###(b)
+
+```{r}
+arma.spec(ar=c(0,-0.3,0,-0.9))
+```
+
+There are two dominant frequencies, around 0.13 and 0.36.
+
+```{r}
+sim_2 <- arima.sim(model = list(ar = c(0,-0.3,0,-0.9)), n=50)
+plot(sim_2)
+```
+
+We expect periodic behavior for period ~ 8 and 3, which is shown in this plot.
+
+###(c)
+
+```{r}
+arma.spec(ar=c(0,0,0,0,0.9))
+```
+
+There are dominant frequencies around 0.2 and 0.4, seemlingly multiples of 0.2.
+
+```{r}
+sim_3 <- arima.sim(model = list(ar = c(0,0,0,0,0.9)), n = 50)
+plot(sim_3)
+```
+
+From the spectral density we should expect periodic behavior around period 5, 2.5. This is clearly borne out by the plot.
+
+##Question 2
+
+###(b)
+
+```{r}
+arma.spec(ar = c(0,0,0.9))
+```
+
+The spectral density suggests that Xt will oscillate, around a period of 1/0.33, or 3.
+
+###(c)
+```{r}
+sim <- arima.sim(model = list(ar = c(0,0,0.9)), n = 50)
+plot(sim)
+
+```
+
+This is consistent with the spectral density above.
+
+###(f)
+
+```{r}
+plot(filter(sim, filter = c(1/3,1/3,1/3), method = 'recursive'))
+```
+
+The model shows the same period as above, which is consistent with what we should expect from a linear filter.
